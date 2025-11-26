@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +19,12 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold">
+          <Link href="/" className="flex-shrink-0">
+            <h1 className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity">
               <span className="text-blue-500">CLICK</span>
               <span className="text-red-500">CRAFT</span>
             </h1>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
@@ -34,13 +35,13 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-gray-900 border-green-500/20">
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#exemplos">Exemplos</a>
+                  <Link href="/exemplos" className="w-full">Exemplos</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#funcionamento">Funcionamento</a>
+                  <a href="/#funcionamento" className="w-full">Funcionamento</a>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#lingua">Língua</a>
+                  <a href="/#lingua" className="w-full">Língua</a>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -52,24 +53,24 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-gray-900 border-green-500/20">
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#meus">Meus Vídeos</a>
+                  <Link href="/biblioteca" className="w-full">Meus Vídeos</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#videos-test">Vídeos Test</a>
+                  <Link href="/biblioteca" className="w-full">Vídeos Test</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-green-500/10">
-                  <a href="#vip">VIP Top 10</a>
+                  <Link href="/biblioteca" className="w-full">VIP Top 10</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             {/* Favoritos */}
-            <a
-              href="#favoritos"
+            <Link
+              href="/favoritos"
               className="text-gray-300 hover:text-white transition-colors"
             >
               Favoritos
-            </a>
+            </Link>
 
             {/* CTA Button */}
             <Button className="bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 text-white font-semibold">
@@ -102,21 +103,24 @@ export function Navbar() {
             <div className="px-3 py-2 text-sm font-semibold text-gray-400">
               Início
             </div>
-            <a
-              href="#exemplos"
+            <Link
+              href="/exemplos"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Exemplos
-            </a>
+            </Link>
             <a
-              href="#funcionamento"
+              href="/#funcionamento"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Funcionamento
             </a>
             <a
-              href="#lingua"
+              href="/#lingua"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Língua
             </a>
@@ -124,31 +128,35 @@ export function Navbar() {
             <div className="px-3 py-2 text-sm font-semibold text-gray-400 mt-4">
               Biblioteca
             </div>
-            <a
-              href="#meus"
+            <Link
+              href="/biblioteca"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Meus Vídeos
-            </a>
-            <a
-              href="#videos-test"
+            </Link>
+            <Link
+              href="/biblioteca"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Vídeos Test
-            </a>
-            <a
-              href="#vip"
+            </Link>
+            <Link
+              href="/biblioteca"
               className="block px-6 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md"
+              onClick={() => setMobileMenuOpen(false)}
             >
               VIP Top 10
-            </a>
+            </Link>
 
-            <a
-              href="#favoritos"
+            <Link
+              href="/favoritos"
               className="block px-3 py-2 text-gray-300 hover:bg-green-500/10 hover:text-white rounded-md mt-4"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Favoritos
-            </a>
+            </Link>
 
             <div className="px-3 pt-4">
               <Button className="w-full bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 text-white font-semibold">
