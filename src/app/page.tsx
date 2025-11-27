@@ -9,13 +9,13 @@ import { Zap, Target, Sparkles, Globe } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500/10 via-black to-red-500/10">
       <Navbar />
       <HeroSection />
       <UrlInput />
       
       {/* Funcionamento Section */}
-      <section id="funcionamento" className="py-20 bg-gradient-to-b from-black to-gray-900">
+      <section id="funcionamento" className="py-20 bg-black/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-red-500/10 border border-blue-500/30 rounded-full px-6 py-2 mb-6">
@@ -32,7 +32,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Iniciante */}
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
+            <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-800 rounded-lg p-8 hover:border-blue-500/50 transition-all">
               <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-blue-500">1</span>
               </div>
@@ -62,7 +62,7 @@ export default function Home() {
             </div>
 
             {/* Criador */}
-            <div className="bg-gradient-to-br from-blue-500/10 to-red-500/10 border-2 border-blue-500/50 rounded-lg p-8 relative">
+            <div className="bg-gradient-to-br from-blue-500/10 to-red-500/10 border-2 border-blue-500/50 rounded-lg p-8 relative hover:border-blue-500 transition-all">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-red-500 text-white text-xs font-bold px-4 py-1 rounded-full">
                 POPULAR
               </div>
@@ -99,7 +99,7 @@ export default function Home() {
             </div>
 
             {/* VIP */}
-            <div className="bg-gray-900 border border-yellow-500/50 rounded-lg p-8">
+            <div className="bg-gray-900/80 backdrop-blur-sm border border-yellow-500/50 rounded-lg p-8 hover:border-yellow-500 transition-all">
               <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl font-bold text-yellow-500">3</span>
               </div>
@@ -136,7 +136,7 @@ export default function Home() {
       </section>
 
       {/* Língua Section */}
-      <section id="lingua" className="py-20 bg-gray-900">
+      <section id="lingua" className="py-20 bg-black/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-red-500/10 border border-blue-500/30 rounded-full px-6 py-2 mb-6">
@@ -168,7 +168,7 @@ export default function Home() {
             ].map((lang) => (
               <div
                 key={lang.name}
-                className={`bg-gray-800 border ${
+                className={`bg-gray-800/80 backdrop-blur-sm border ${
                   lang.priority ? 'border-blue-500/50 ring-2 ring-blue-500/20' : 'border-gray-700'
                 } rounded-lg p-4 text-center hover:border-blue-500/50 transition-all cursor-pointer group`}
               >
@@ -199,7 +199,7 @@ export default function Home() {
       <PricingCards />
       
       {/* Footer */}
-      <footer className="bg-black border-t border-gray-800 py-12">
+      <footer className="bg-black/80 backdrop-blur-sm border-t border-gray-800 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>

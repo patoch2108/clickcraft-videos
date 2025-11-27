@@ -1,79 +1,93 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Sparkles, Play } from 'lucide-react';
 
 export function HeroSection() {
-  const [binaryLines, setBinaryLines] = useState<string[]>([]);
+  const scrollToAuth = () => {
+    const authSection = document.getElementById('auth');
+    if (authSection) {
+      authSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
-  useEffect(() => {
-    // Generate binary pattern only on client side to avoid hydration mismatch
-    const lines = Array.from({ length: 50 }).map(() =>
-      Array.from({ length: 100 })
-        .map(() => Math.random() > 0.5 ? '1' : '0')
-        .join(' ')
-    );
-    setBinaryLines(lines);
-  }, []);
+  const scrollToUrlInput = () => {
+    const urlSection = document.querySelector('.url-input-section');
+    if (urlSection) {
+      urlSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Binary Background Pattern */}
-      <div className="absolute inset-0 bg-black">
-        <div className="absolute inset-0 opacity-20">
-          <div className="text-green-500 text-xs font-mono leading-tight whitespace-pre overflow-hidden">
-            {binaryLines.map((line, i) => (
-              <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}>
-                {line}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      {/* Animated Background - Gradiente azul/vermelho como na v6 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-black to-red-500/10" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
+      
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Left: Einstein Hacker Image */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-red-500/20 blur-3xl rounded-full"></div>
-            <img
-              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=600&fit=crop"
-              alt="Einstein Hacker"
-              className="relative rounded-2xl shadow-2xl border-2 border-green-500/30 hover:scale-105 transition-transform duration-300"
-            />
-            <div className="absolute -bottom-4 -right-4 bg-gradient-to-r from-blue-500 to-red-500 text-white px-6 py-3 rounded-lg shadow-xl font-bold">
-              <Sparkles className="inline w-5 h-5 mr-2" />
-              IA Powered
-            </div>
-          </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-red-500/10 border border-blue-500/30 rounded-full px-6 py-2 mb-8">
+          <Sparkles className="w-5 h-5 text-blue-400" />
+          <span className="text-gray-300 font-semibold">IA de Última Geração</span>
+        </div>
 
-          {/* Right: Hero Text */}
-          <div className="text-center md:text-left">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="text-blue-500">CLICK</span>
-              <span className="text-red-500">CRAFT</span>
-            </h1>
-            <p className="text-2xl md:text-3xl text-gray-300 mb-4">
-              Crie Vídeos Virais
-            </p>
-            <p className="text-xl text-gray-400 mb-8">
-              Automaticamente. Monetizáveis. Em Segundos.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-6 py-3">
-                <p className="text-green-400 font-semibold">✓ YouTube Shorts</p>
-              </div>
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-6 py-3">
-                <p className="text-green-400 font-semibold">✓ TikTok & Reels</p>
-              </div>
-            </div>
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6">
+          <span className="text-white">Transforme Vídeos em</span>
+          <br />
+          <span className="bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
+            Conteúdo Viral
+          </span>
+        </h1>
+
+        <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-12">
+          Nossa IA analisa, edita e otimiza seus vídeos automaticamente para máximo engajamento em TikTok, Instagram e YouTube Shorts
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Button
+            onClick={scrollToAuth}
+            size="lg"
+            className="h-14 px-8 bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 text-white font-bold text-lg"
+          >
+            <Play className="w-5 h-5 mr-2" />
+            Começar Agora
+          </Button>
+          <Button
+            onClick={scrollToUrlInput}
+            size="lg"
+            variant="outline"
+            className="h-14 px-8 border-gray-700 text-white hover:bg-gray-900"
+          >
+            Testar Grátis
+          </Button>
+        </div>
+
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="text-3xl md:text-4xl font-bold text-blue-500 mb-2">10K+</div>
+            <div className="text-gray-400 text-sm">Vídeos Processados</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl md:text-4xl font-bold text-blue-500 mb-2">95%</div>
+            <div className="text-gray-400 text-sm">Taxa de Sucesso</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl md:text-4xl font-bold text-blue-500 mb-2">5M+</div>
+            <div className="text-gray-400 text-sm">Views Geradas</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl md:text-4xl font-bold text-blue-500 mb-2">24/7</div>
+            <div className="text-gray-400 text-sm">Suporte IA</div>
           </div>
         </div>
       </div>
 
-      {/* Gradient Overlay Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent"></div>
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="w-6 h-10 border-2 border-gray-700 rounded-full flex items-start justify-center p-2">
+          <div className="w-1 h-3 bg-blue-500 rounded-full" />
+        </div>
+      </div>
     </section>
   );
 }
