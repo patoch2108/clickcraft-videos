@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_key: process.env.NEXT_PUBLIC_TIKTOK_CLIENT_ID || '',
+        client_key: process.env.aw464uhmsknwu1xu || '',
         client_secret: process.env.TIKTOK_CLIENT_SECRET || '',
         code: code,
         grant_type: 'authorization_code',
