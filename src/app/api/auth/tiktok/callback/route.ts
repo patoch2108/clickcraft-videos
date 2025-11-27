@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         client_secret: process.env.WmSQH1FgHXj7epGItY1w3WobA6rn4MQH || '',
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: process.env.NEXT_PUBLIC_TIKTOK_REDIRECT_URI || '',
+        redirect_uri: process.env.http://localhost:3000/api/auth/tiktok/callback|| '',
       }),
     });
 
