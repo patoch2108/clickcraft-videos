@@ -44,22 +44,19 @@
         });
       }
       
-// Continue postMessage for backward compatibility
-  window.parent?.postMessage({
-    __lasy: true,
-    type: 'sandbox-log',
-    payload: evt
-  }, TARGET_ORIGIN);
+      // Enviar para parent via postMessage
+      window.parent?.postMessage({ 
+        __lasy: true, 
+        type: 'sandbox-log', 
+        payload: evt 
+      }, TARGET_ORIGIN);
+      
+    } catch (error) {
+      // Falha silenciosa para não quebrar o app
+      console.debug('Lasy bridge error:', error);
+    }
+  };
 
-  // Enfileira para envio via fetch (opcional)
-  buffer.push(evt);
-  // Limitar buffer máximo
-  if (buffer.length > 1000) buffer = buffer.slice(-1000);
-  scheduleFlush();
-
-} catch (error) {
-  console.debug('Lasy bridge error:', error);
-}
   // 1. CAPTURAR ERROS EXISTENTES
   function captureExistingErrors() {
     try {
@@ -98,78 +95,81 @@
         return;
       }
       
-    // Detectar erro de BUILD do NextJS (tela vermelha)
-  if (document.body.innerHTML.includes('Application error: a client-side exception has occurred') ||
-      document.body.innerHTML.includes('Unhandled Runtime Error') ||
-      document.body.innerHTML.includes('Error: ') ||
-      document.querySelector('[data-nextjs-toast]') ||
-      document.querySelector('#__next-build-watcher') ||
-      document.body.innerHTML.includes('ChunkLoadError') ||
-      document.body.innerHTML.includes('SyntaxError') ||
-      document.body.innerHTML.includes('Module not found') ||
-      (document.body.style.backgroundColor === 'rgb(255, 85, 85)' ||
-       document.body.style.backgroundColor === 'red' ||
-       document.documentElement.style.backgroundColor === 'rgb(255, 85, 85)')) {
-    publish({
-      source: 'nextjs-build-error',
-      level: 'error',
-      message: 'Erro de BUILD detectado no NextJS',
-      args: ['Erro na compilação/build do projeto NextJS'],
-      type: 'nextjs-build-error',
-      errorSource: 'nextjs-build'
-    });
-    console.warn('[Lasy Bridge] NextJS build error detected');
-  }
+      // ✅ NOVO: Detectar erro de BUILD do NextJS (tela vermelha)
+      if (document.body.innerHTML.includes('Application error: a client-side exception has occurred') ||
+          document.body.innerHTML.includes('Unhandled Runtime Error') ||
+          document.body.innerHTML.includes('Error: ') ||
+          document.querySelector('[data-nextjs-toast]') ||
+          document.querySelector('#__next-build-watcher') ||
+          document.body.innerHTML.includes('ChunkLoadError') ||
+          document.body.innerHTML.includes('SyntaxError') ||
+          document.body.innerHTML.includes('Module not found') ||
+          (document.body.style.backgroundColor === 'rgb(255, 85, 85)' || 
+           document.body.style.backgroundColor === 'red' ||
+           document.documentElement.style.backgroundColor === 'rgb(255, 85, 85)')) {
+        publish({
+          source: 'nextjs-build-error',
+          level: 'error',
+          message: 'Erro de BUILD detectado no NextJS',
+          args: ['Erro na compilação/build do projeto NextJS'],
+          type: 'nextjs-build-error',
+          errorSource: 'nextjs-build'
+        });
+        console.warn('[Lasy Bridge] NextJS build error detected');
+      }
 
-  const nextData = window.__NEXT_DATA__;
-  if (nextData?.err) {
-    publish({
-      source: 'nextjs-existing',
-      level: 'error',
-      message: nextData.err.message,
-      stack: nextData.err.stack,
-      args: [nextData.err.message],
-      type: 'server-error',
-      errorSource: nextData.err.source || 'server'
-    });
-  }
-
-  if (typeof performance !== 'undefined') {
-    const faviconEntries = performance.getEntries().filter(entry =>
-      entry.name.includes('favicon') ||
-      entry.name.includes('ico') ||
-      (entry.duration === 0 && entry.name.includes('http'))
-    );
-
-    faviconEntries.forEach(entry => {
-      publish({
-        source: 'performance-existing',
-        level: entry.duration === 0 ? 'warn' : 'info',
-        message: `Resource issue: ${entry.name} (duration: ${entry.duration}ms)`,
-        args: [`Resource: ${entry.name}`],
-        type: 'network-performance',
-        url: entry.name,
-        duration: entry.duration
-      });
-    });
-  }
-
-  if (nextData?.props?.pageProps?.statusCode) {
-    const statusCode = nextData.props.pageProps.statusCode;
-    if (statusCode >= 400) {
-      publish({
-        source: 'page-existing',
-        level: statusCode >= 500 ? 'error' : 'warn',
-        message: `Page error: HTTP ${statusCode}`,
-        args: [`HTTP ${statusCode}`],
-        type: 'page-error',
-        statusCode: statusCode
-      });
-    }
-  }
-} catch {
-  // silent
-}__
+      // Capturar erro atual do Next.js (apenas se não for problema de sandbox)
+      const nextData = window.__NEXT_DATA__;
+      if (nextData?.err) {
+        publish({
+          source: 'nextjs-existing',
+          level: 'error',
+          message: nextData.err.message,
+          stack: nextData.err.stack,
+          args: [nextData.err.message],
+          type: 'server-error',
+          errorSource: nextData.err.source || 'server'
+        });
+      }
+      
+      // Capturar problemas de performance (favicon, etc.)
+      if (typeof performance !== 'undefined') {
+        const faviconEntries = performance.getEntries().filter(entry => 
+          entry.name.includes('favicon') || 
+          entry.name.includes('ico') ||
+          (entry.duration === 0 && entry.name.includes('http'))
+        );
+        
+        faviconEntries.forEach(entry => {
+          publish({
+            source: 'performance-existing',
+            level: entry.duration === 0 ? 'warn' : 'info',
+            message: `Resource issue: ${entry.name} (duration: ${entry.duration}ms)`,
+            args: [`Resource: ${entry.name}`],
+            type: 'network-performance',
+            url: entry.name,
+            duration: entry.duration
+          });
+        });
+      }
+      
+      // Capturar erros do console que já aconteceram
+      if (nextData?.props?.pageProps?.statusCode) {
+        const statusCode = nextData.props.pageProps.statusCode;
+        if (statusCode >= 400) {
+          publish({
+            source: 'page-existing',
+            level: statusCode >= 500 ? 'error' : 'warn',
+            message: `Page error: HTTP ${statusCode}`,
+            args: [`HTTP ${statusCode}`],
+            type: 'page-error',
+            statusCode: statusCode
+          });
+        }
+      }
+          } catch {
+        // Falha silenciosa
+      }
   }
 
   // 2. CHAIN com console.* existentes (aguardar hidratação)
@@ -189,26 +189,26 @@
           return existingFunction.apply(console, args);
         }
         
-// Nossa captura primeiro (apenas se bridge inicializado)
-    if (bridgeInitialized) {
-      try {
-        publish({
-          source: 'client-console',
-          level: level,
-          args: args,
-          message: args.map(arg => String(arg)).join(' '),
-          type: 'console-call',
-          interceptedBy: 'lasy-chain'
-        });
-      } catch {
+        // Nossa captura primeiro (apenas se bridge inicializado)
+        if (bridgeInitialized) {
+          try {
+            publish({
+              source: 'client-console',
+              level: level,
+              args: args,
+              message: args.map(arg => String(arg)).join(' '),
+              type: 'console-call',
+              interceptedBy: 'lasy-chain'
+            });
+                } catch {
         // Falha silenciosa
       }
-    }
-
-    // Executar função existente
-    return existingFunction.apply(console, args);
-  };
-});](streamdown:incomplete-link)
+        }
+        
+        // Executar função existente
+        return existingFunction.apply(console, args);
+      };
+    });
   }
 
   // 3. CHAIN com window.onerror
@@ -277,8 +277,8 @@
     }
     
     if (existingUnhandledRejection) {
-  return existingUnhandledRejection.call(window, e);
-}
+      return existingUnhandledRejection.call(window, e);
+    }
   };
 
   // 6. Listener adicional para promise rejections
@@ -309,32 +309,32 @@
       const response = await originalFetch(input, init);
       
       if (!response.ok) {
-    publish({
-      source: 'client-fetch',
-      level: 'network',
-      status: response.status,
-      method: method,
-      url: response.url,
-      message: `${method} ${response.url} ${response.status} ${response.statusText}`,
-      args: [`Network Error: ${method} ${response.url} returned ${response.status}`],
-      type: 'fetch-error'
-    });
-  }
-
-  return response;
-} catch (error) {
-  publish({
-    source: 'client-fetch',
-    level: 'network-error',
-    message: error?.message || 'Network request failed',
-    stack: error?.stack,
-    method: method,
-    url: url,
-    args: [`Network Failed: ${method} ${url} - ${error?.message}`],
-    type: 'fetch-failure'
-  });
-  throw error;
-}
+        publish({
+          source: 'client-fetch',
+          level: 'network',
+          status: response.status,
+          method: method,
+          url: response.url,
+          message: `${method} ${response.url} ${response.status} ${response.statusText}`,
+          args: [`Network Error: ${method} ${response.url} returned ${response.status}`],
+          type: 'fetch-error'
+        });
+      }
+      
+      return response;
+    } catch (error) {
+      publish({
+        source: 'client-fetch',
+        level: 'network-error',
+        message: error?.message || 'Network request failed',
+        stack: error?.stack,
+        method: method,
+        url: url,
+        args: [`Network Failed: ${method} ${url} - ${error?.message}`],
+        type: 'fetch-failure'
+      });
+      throw error;
+    }
   };
 
   // 8. Interceptar XMLHttpRequest
@@ -349,34 +349,34 @@
       return originalOpen(method, url, ...args);
     };
     
-xhr.addEventListener('error', () => {
-  publish({
-    source: 'client-xhr',
-    level: 'network-error',
-    message: 'XMLHttpRequest failed',
-    method: xhr._lasy_method,
-    url: xhr._lasy_url,
-    args: [`XHR Failed: ${xhr._lasy_method} ${xhr._lasy_url}`],
-    type: 'xhr-error'
-  });
-});
-
-xhr.addEventListener('load', () => {
-  if (xhr.status >= 400) {
-    publish({
-      source: 'client-xhr',
-      level: 'network',
-      status: xhr.status,
-      method: xhr._lasy_method,
-      url: xhr._lasy_url,
-      message: `${xhr._lasy_method} ${xhr._lasy_url} ${xhr.status} ${xhr.statusText}`,
-      args: [`Network Error: ${xhr._lasy_method} ${xhr._lasy_url} returned ${xhr.status}`],
-      type: 'xhr-status-error'
+    xhr.addEventListener('error', () => {
+      publish({
+        source: 'client-xhr',
+        level: 'network-error',
+        message: 'XMLHttpRequest failed',
+        method: xhr._lasy_method,
+        url: xhr._lasy_url,
+        args: [`XHR Failed: ${xhr._lasy_method} ${xhr._lasy_url}`],
+        type: 'xhr-error'
+      });
     });
-  }
-});
-
-return xhr;_
+    
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 400) {
+        publish({
+          source: 'client-xhr',
+          level: 'network',
+          status: xhr.status,
+          method: xhr._lasy_method,
+          url: xhr._lasy_url,
+          message: `${xhr._lasy_method} ${xhr._lasy_url} ${xhr.status} ${xhr.statusText}`,
+          args: [`Network Error: ${xhr._lasy_method} ${xhr._lasy_url} returned ${xhr.status}`],
+          type: 'xhr-status-error'
+        });
+      }
+    });
+    
+    return xhr;
   };
 
   // 9. Função principal de inicialização
@@ -386,31 +386,31 @@ return xhr;_
     // 1. Capturar erros existentes primeiro
     captureExistingErrors();
     
-// 2. Configurar interceptação de console
-setupConsoleInterception();
-
-// 3. Marcar como inicializado
-bridgeInitialized = true;
-
-// 4. Notificar que a ponte foi estabelecida
-publish({
-  source: 'client-bridge',
-  level: 'info',
-  message: 'Lasy console logs conectado',
-  args: ['Lasy console logs conectado'],
-  type: 'bridge-initialized'
-});
-
-// 5. Enviar sinal de pronto para parent
-notifyBridgeReady();
-
-// 6. Enviar sinal adicional com delay para garantir que parent esteja escutando
-setTimeout(() => {
-  console.log('[Lasy Bridge] Sending delayed ready signal...');
-  notifyBridgeReady();
-}, 1000);
-
-console.debug('[Lasy Bridge] Initialization completed');
+    // 2. Configurar interceptação de console
+    setupConsoleInterception();
+    
+    // 3. Marcar como inicializado
+    bridgeInitialized = true;
+    
+    // 4. Notificar que a ponte foi estabelecida
+    publish({
+      source: 'client-bridge',
+      level: 'info',
+      message: 'Lasy console logs conectado',
+      args: ['Lasy console logs conectado'],
+      type: 'bridge-initialized'
+    });
+    
+    // 5. Enviar sinal de pronto para parent
+    notifyBridgeReady();
+    
+    // 6. Enviar sinal adicional com delay para garantir que parent esteja escutando
+    setTimeout(() => {
+      console.log('[Lasy Bridge] Sending delayed ready signal...');
+      notifyBridgeReady();
+    }, 1000);
+    
+    console.debug('[Lasy Bridge] Initialization completed');
   }
 
   // Aguardar hidratação antes de inicializar
@@ -440,27 +440,27 @@ console.debug('[Lasy Bridge] Initialization completed');
       return `#${element.id}`;
     }
     
-if (element.className) {
-  // Garantir que className seja tratado como string
-  const classNameStr = typeof element.className === 'string'
-    ? element.className
-    : String(element.className);
-  const classes = classNameStr.split(' ').filter(c => c.trim() && !c.includes('lasy-highlight'));
-  if (classes.length > 0) {
-    return `.${classes.join('.')}`;
-  }
-}
-
-// Fallback: tag + nth-child
-const tag = element.tagName.toLowerCase();
-const parent = element.parentElement;
-if (parent) {
-  const siblings = Array.from(parent.children).filter(el => el.tagName === element.tagName);
-  const index = siblings.indexOf(element) + 1;
-  return `${tag}:nth-child(${index})`;
-}
-
-return tag;
+    if (element.className) {
+      // Garantir que className seja tratado como string
+      const classNameStr = typeof element.className === 'string' 
+        ? element.className 
+        : element.className.toString();
+      const classes = classNameStr.split(' ').filter(c => c.trim() && !c.includes('lasy-highlight'));
+      if (classes.length > 0) {
+        return `.${classes.join('.')}`;
+      }
+    }
+    
+    // Fallback: tag + nth-child
+    const tag = element.tagName.toLowerCase();
+    const parent = element.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children).filter(el => el.tagName === element.tagName);
+      const index = siblings.indexOf(element) + 1;
+      return `${tag}:nth-child(${index})`;
+    }
+    
+    return tag;
   }
 
   // Ativar seletor de elementos (com verificações de segurança)
@@ -473,122 +473,122 @@ return tag;
       return;
     }
     
-  // Verificação básica de DOM - mais permissiva
-if (document.readyState === 'loading') {
-  console.log('[Lasy Element Selector] Waiting for DOM to be ready...');
-  setTimeout(activateElementSelector, 300);
-  return;
-}
-
-// Verificação adicional de segurança - se bridge ainda não inicializou, aguardar mais um pouco
-if (!bridgeInitialized) {
-  console.log('[Lasy Element Selector] Bridge not ready, waiting...');
-  setTimeout(activateElementSelector, 200);
-  return;
-}
-
-console.log('[Lasy Element Selector] Activating...');
-elementSelectorActive = true;
-
-// Criar estilos para highlight
-selectorStyle = document.createElement('style');
-selectorStyle.id = 'lasy-selector-style';
-selectorStyle.textContent = `
-  .lasy-highlight {
-    outline: 3px solid #3b82f6 !important;
-    outline-offset: 2px !important;
-    cursor: pointer !important;
-    position: relative !important;
-    background-color: rgba(59, 130, 246, 0.1) !important;
-  }
-  .lasy-highlight::before {
-    content: attr(data-lasy-selector);
-    position: absolute;
-    top: -28px;
-    left: 0;
-    background: #3b82f6;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-    z-index: 10000;
-    white-space: nowrap;
-    pointer-events: none;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: bold;
-  }
-  body {
-    cursor: crosshair !important;
-  }
-`;
-document.head.appendChild(selectorStyle);
-
-// Handler para mouseover
-mouseMoveHandler = function(e) {
-  if (!elementSelectorActive) return;
-  e.stopPropagation();
-
-  // Remover highlights anteriores
-  document.querySelectorAll('.lasy-highlight').forEach(el => {
-    el.classList.remove('lasy-highlight');
-    el.removeAttribute('data-lasy-selector');
-  });
-
-  // Skip elementos do próprio seletor
-  if (e.target === selectorStyle || e.target.classList.contains('lasy-highlight')) {
-    return;
-  }
-
-  const selector = generateSelector(e.target);
-  e.target.classList.add('lasy-highlight');
-  e.target.setAttribute('data-lasy-selector', selector);
-};
-
-// Handler para click
-clickHandler = function(e) {
-  if (!elementSelectorActive) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  const selector = generateSelector(e.target);
-  const elementInfo = {
-    tag: e.target.tagName.toLowerCase(),
-    text: e.target.textContent?.trim().substring(0, 50) || '',
-    id: e.target.id || '',
-    className: e.target.className || ''
-  };
-
-  console.log('[Lasy Element Selector] Element selected:', selector, elementInfo);
-
-  // Enviar seleção para parent
-  try {
-    window.parent?.postMessage({
-      __lasy: true,
-      type: 'element-selected',
-      payload: {
-        selector: selector,
-        elementInfo: elementInfo
+    // Verificação básica de DOM - mais permissiva
+    if (document.readyState === 'loading') {
+      console.log('[Lasy Element Selector] Waiting for DOM to be ready...');
+      setTimeout(activateElementSelector, 300);
+      return;
+    }
+    
+    // Verificação adicional de segurança - se bridge ainda não inicializou, aguardar mais um pouco
+    if (!bridgeInitialized) {
+      console.log('[Lasy Element Selector] Bridge not ready, waiting...');
+      setTimeout(activateElementSelector, 200);
+      return;
+    }
+    
+    console.log('[Lasy Element Selector] Activating...');
+    elementSelectorActive = true;
+    
+    // Criar estilos para highlight
+    selectorStyle = document.createElement('style');
+    selectorStyle.id = 'lasy-selector-style';
+    selectorStyle.textContent = `
+      .lasy-highlight {
+        outline: 3px solid #3b82f6 !important;
+        outline-offset: 2px !important;
+        cursor: pointer !important;
+        position: relative !important;
+        background-color: rgba(59, 130, 246, 0.1) !important;
       }
-    }, TARGET_ORIGIN);
-
-    console.log('[Lasy Element Selector] Selection sent to parent');
-  } catch (error) {
-    console.error('[Lasy Element Selector] Error sending selection:', error);
-  }
-
-  // Auto-desativar após seleção
-  deactivateElementSelector();
-};
-
-// Registrar event listeners
-document.addEventListener('mouseover', mouseMoveHandler, true);
-document.addEventListener('click', clickHandler, true);
-
-console.log('[Lasy Element Selector] Activated');
+      .lasy-highlight::before {
+        content: attr(data-lasy-selector);
+        position: absolute;
+        top: -28px;
+        left: 0;
+        background: #3b82f6;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: 'Courier New', monospace;
+        z-index: 10000;
+        white-space: nowrap;
+        pointer-events: none;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: bold;
+      }
+      body {
+        cursor: crosshair !important;
+      }
+    `;
+    document.head.appendChild(selectorStyle);
+    
+    // Handler para mouseover
+    mouseMoveHandler = function(e) {
+      if (!elementSelectorActive) return;
+      e.stopPropagation();
+      
+      // Remover highlights anteriores
+      document.querySelectorAll('.lasy-highlight').forEach(el => {
+        el.classList.remove('lasy-highlight');
+        el.removeAttribute('data-lasy-selector');
+      });
+      
+      // Skip elementos do próprio seletor
+      if (e.target === selectorStyle || e.target.classList.contains('lasy-highlight')) {
+        return;
+      }
+      
+      const selector = generateSelector(e.target);
+      e.target.classList.add('lasy-highlight');
+      e.target.setAttribute('data-lasy-selector', selector);
+    };
+    
+    // Handler para click
+    clickHandler = function(e) {
+      if (!elementSelectorActive) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const selector = generateSelector(e.target);
+      const elementInfo = {
+        tag: e.target.tagName.toLowerCase(),
+        text: e.target.textContent?.trim().substring(0, 50) || '',
+        id: e.target.id || '',
+        className: e.target.className || ''
+      };
+      
+      console.log('[Lasy Element Selector] Element selected:', selector, elementInfo);
+      
+      // Enviar seleção para parent
+      try {
+        window.parent?.postMessage({
+          __lasy: true,
+          type: 'element-selected',
+          payload: {
+            selector: selector,
+            elementInfo: elementInfo
+          }
+        }, TARGET_ORIGIN);
+        
+        console.log('[Lasy Element Selector] Selection sent to parent');
+      } catch (error) {
+        console.error('[Lasy Element Selector] Error sending selection:', error);
+      }
+      
+      // Auto-desativar após seleção
+      deactivateElementSelector();
+    };
+    
+    // Registrar event listeners
+    document.addEventListener('mouseover', mouseMoveHandler, true);
+    document.addEventListener('click', clickHandler, true);
+    
+    console.log('[Lasy Element Selector] Activated');
   }
 
   // Desativar seletor de elementos
@@ -601,35 +601,30 @@ console.log('[Lasy Element Selector] Activated');
     console.log('[Lasy Element Selector] Deactivating...');
     elementSelectorActive = false;
     
-  // Remover event listeners
-if (mouseMoveHandler) {
-  document.removeEventListener('mouseover', mouseMoveHandler, true);
-  mouseMoveHandler = null;
-}
-
-if (clickHandler) {
-  document.removeEventListener('click', clickHandler, true);
-  clickHandler = null;
-}
-
-// Remover highlights
-document.querySelectorAll('.lasy-highlight').forEach(el => {
-  el.classList.remove('lasy-highlight');
-  el.removeAttribute('data-lasy-selector');
-});
-
-// Remover estilos
-if (selectorStyle) {
-  selectorStyle.remove();
-  selectorStyle = null;
-}
-
-// Restaurar cursor padrão
-try {
-  document.body.style.cursor = '';
-} catch {}
-
-console.log('[Lasy Element Selector] Deactivated');
+    // Remover event listeners
+    if (mouseMoveHandler) {
+      document.removeEventListener('mouseover', mouseMoveHandler, true);
+      mouseMoveHandler = null;
+    }
+    
+    if (clickHandler) {
+      document.removeEventListener('click', clickHandler, true);
+      clickHandler = null;
+    }
+    
+    // Remover highlights
+    document.querySelectorAll('.lasy-highlight').forEach(el => {
+      el.classList.remove('lasy-highlight');
+      el.removeAttribute('data-lasy-selector');
+    });
+    
+    // Remover estilos
+    if (selectorStyle) {
+      selectorStyle.remove();
+      selectorStyle = null;
+    }
+    
+    console.log('[Lasy Element Selector] Deactivated');
   }
 
   // Escutar comandos de ativação/desativação do parent
@@ -641,26 +636,23 @@ console.log('[Lasy Element Selector] Deactivated');
       console.log('[Lasy Element Selector] Processing action:', action);
       
       if (action === 'activate') {
-      console.log('[Lasy Element Selector] Scheduling activation with 500ms delay...');
-      // Delay para garantir hidratação completa - usuário já viu a página funcionando
-      setTimeout(() => {
-        console.log('[Lasy Element Selector] Executing delayed activation...');
-        activateElementSelector();
-      }, 500);
-    } else if (action === 'deactivate') {
-      console.log('[Lasy Element Selector] Deactivating immediately...');
-      deactivateElementSelector();
+        console.log('[Lasy Element Selector] Scheduling activation with 500ms delay...');
+        // Delay para garantir hidratação completa - usuário já viu a página funcionando
+        setTimeout(() => {
+          console.log('[Lasy Element Selector] Executing delayed activation...');
+          activateElementSelector();
+        }, 500);
+      } else if (action === 'deactivate') {
+        console.log('[Lasy Element Selector] Deactivating immediately...');
+        deactivateElementSelector();
+      }
     }
-  }
-
-  // Responder a pedidos de status do bridge
-  if (data.type === 'lasy-bridge-status-request') {
-    console.log('[Lasy Bridge] Status requested, sending ready signal...');
-    notifyBridgeReady();
-  }
-} catch (err) {
-  console.debug('[Lasy Element Selector] Message handler error:', err);
-}
+    
+    // Responder a pedidos de status do bridge
+    if (event.data.type === 'lasy-bridge-status-request') {
+      console.log('[Lasy Bridge] Status requested, sending ready signal...');
+      notifyBridgeReady();
+    }
   });
 
   console.log('[Lasy Element Selector] Initialized and ready');
@@ -677,27 +669,27 @@ console.log('[Lasy Element Selector] Deactivated');
     currentUrl = newUrl;
     const pathname = window.location.pathname;
     
-   // Adicionar nova rota às descobertas
-discoveredRoutes.add(pathname);
-
-// Enviar mudança de URL
-window.parent?.postMessage({
-  __lasy: true,
-  type: 'url-change',
-  payload: {
-    fullUrl: newUrl,
-    pathname: pathname,
-    search: window.location.search,
-    hash: window.location.hash,
-    discoveredRoutes: Array.from(discoveredRoutes)
-  }
-}, TARGET_ORIGIN);
-
-console.log('[Lasy URL Tracker] URL changed to:', pathname);
-
-// Agendar scan de links após mudança
-clearTimeout(scanTimeout);
-scanTimeout = setTimeout(scanPageLinks, 500);
+    // Adicionar nova rota às descobertas
+    discoveredRoutes.add(pathname);
+    
+    // Enviar mudança de URL
+    window.parent?.postMessage({
+      __lasy: true,
+      type: 'url-change',
+      payload: {
+        fullUrl: newUrl,
+        pathname: pathname,
+        search: window.location.search,
+        hash: window.location.hash,
+        discoveredRoutes: Array.from(discoveredRoutes)
+      }
+    }, TARGET_ORIGIN);
+    
+    console.log('[Lasy URL Tracker] URL changed to:', pathname);
+    
+    // Agendar scan de links após mudança
+    clearTimeout(scanTimeout);
+    scanTimeout = setTimeout(scanPageLinks, 500);
   }
 
   function scanPageLinks() {
@@ -715,30 +707,30 @@ scanTimeout = setTimeout(scanPageLinks, 500);
         }
       });
       
-    // Verificar se encontrou novas rotas
-  const hasNewRoutes = Array.from(newRoutes).some(route => !discoveredRoutes.has(route));
-
-  if (hasNewRoutes) {
-    // Adicionar novas rotas ao conjunto
-    newRoutes.forEach(route => discoveredRoutes.add(route));
-
-    // Enviar atualização de rotas descobertas
-    window.parent?.postMessage({
-      __lasy: true,
-      type: 'routes-discovered',
-      payload: {
-        allRoutes: Array.from(discoveredRoutes),
-        newRoutes: Array.from(newRoutes),
-        source: window.location.pathname,
-        scanMethod: 'dom-links'
+      // Verificar se encontrou novas rotas
+      const hasNewRoutes = Array.from(newRoutes).some(route => !discoveredRoutes.has(route));
+      
+      if (hasNewRoutes) {
+        // Adicionar novas rotas ao conjunto
+        newRoutes.forEach(route => discoveredRoutes.add(route));
+        
+        // Enviar atualização de rotas descobertas
+        window.parent?.postMessage({
+          __lasy: true,
+          type: 'routes-discovered',
+          payload: {
+            allRoutes: Array.from(discoveredRoutes),
+            newRoutes: Array.from(newRoutes),
+            source: window.location.pathname,
+            scanMethod: 'dom-links'
+          }
+        }, TARGET_ORIGIN);
+        
+        console.log('[Lasy Route Discovery] Found new routes:', Array.from(newRoutes));
       }
-    }, TARGET_ORIGIN);
-
-    console.log('[Lasy Route Discovery] Found new routes:', Array.from(newRoutes));
-  }
-} catch (error) {
-  console.debug('[Lasy Route Discovery] Error scanning links:', error);
-}
+    } catch (error) {
+      console.debug('[Lasy Route Discovery] Error scanning links:', error);
+    }
   }
 
   // Interceptar History API (navegação SPA)
