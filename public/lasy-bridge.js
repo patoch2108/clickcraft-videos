@@ -44,17 +44,22 @@
         });
       }
       
-      // Enviar para parent via postMessage
-      window.parent?.postMessage({ 
-        __lasy: true, 
-        type: 'sandbox-log', 
-        payload: evt 
-      }, TARGET_ORIGIN);
-      
-    } catch (error) {
-      // Falha silenciosa para não quebrar o app
-      console.debug('Lasy bridge error:', error);
-    }
+// Continue postMessage for backward compatibility
+  window.parent?.postMessage({ 
+    __lasy: true, 
+    type: 'sandbox-log', 
+    payload: evt 
+  }, TARGET_ORIGIN);
+
+  // Enfileira para envio via fetch
+  buffer.push(evt);
+  // Limitar buffer máximo
+  if (buffer.length > 1000) buffer = buffer.slice(-1000);
+  scheduleFlush();
+
+} catch (error) {
+  console.debug('Lasy bridge error:', error);
+}
   };
 
   // 1. CAPTURAR ERROS EXISTENTES
@@ -96,81 +101,77 @@
       }
       
       // ✅ NOVO: Detectar erro de BUILD do NextJS (tela vermelha)
-      if (document.body.innerHTML.includes('Application error: a client-side exception has occurred') ||
-          document.body.innerHTML.includes('Unhandled Runtime Error') ||
-          document.body.innerHTML.includes('Error: ') ||
-          document.querySelector('[data-nextjs-toast]') ||
-          document.querySelector('#__next-build-watcher') ||
-          document.body.innerHTML.includes('ChunkLoadError') ||
-          document.body.innerHTML.includes('SyntaxError') ||
-          document.body.innerHTML.includes('Module not found') ||
-          (document.body.style.backgroundColor === 'rgb(255, 85, 85)' || 
-           document.body.style.backgroundColor === 'red' ||
-           document.documentElement.style.backgroundColor === 'rgb(255, 85, 85)')) {
-        publish({
-          source: 'nextjs-build-error',
-          level: 'error',
-          message: 'Erro de BUILD detectado no NextJS',
-          args: ['Erro na compilação/build do projeto NextJS'],
-          type: 'nextjs-build-error',
-          errorSource: 'nextjs-build'
-        });
-        console.warn('[Lasy Bridge] NextJS build error detected');
-      }
-
-      // Capturar erro atual do Next.js (apenas se não for problema de sandbox)
-      const nextData = window.__NEXT_DATA__;
-      if (nextData?.err) {
-        publish({
-          source: 'nextjs-existing',
-          level: 'error',
-          message: nextData.err.message,
-          stack: nextData.err.stack,
-          args: [nextData.err.message],
-          type: 'server-error',
-          errorSource: nextData.err.source || 'server'
-        });
-      }
-      
-      // Capturar problemas de performance (favicon, etc.)
-      if (typeof performance !== 'undefined') {
-        const faviconEntries = performance.getEntries().filter(entry => 
-          entry.name.includes('favicon') || 
-          entry.name.includes('ico') ||
-          (entry.duration === 0 && entry.name.includes('http'))
-        );
-        
-        faviconEntries.forEach(entry => {
-          publish({
-            source: 'performance-existing',
-            level: entry.duration === 0 ? 'warn' : 'info',
-            message: `Resource issue: ${entry.name} (duration: ${entry.duration}ms)`,
-            args: [`Resource: ${entry.name}`],
-            type: 'network-performance',
-            url: entry.name,
-            duration: entry.duration
-          });
-        });
-      }
-      
-      // Capturar erros do console que já aconteceram
-      if (nextData?.props?.pageProps?.statusCode) {
-        const statusCode = nextData.props.pageProps.statusCode;
-        if (statusCode >= 400) {
-          publish({
-            source: 'page-existing',
-            level: statusCode >= 500 ? 'error' : 'warn',
-            message: `Page error: HTTP ${statusCode}`,
-            args: [`HTTP ${statusCode}`],
-            type: 'page-error',
-            statusCode: statusCode
-          });
-        }
-      }
-          } catch {
-        // Falha silenciosa
-      }
+if (document.body.innerHTML.includes('Application error: a client-side exception has occurred') ||
+      document.body.innerHTML.includes('Unhandled Runtime Error') ||
+      document.body.innerHTML.includes('Error: ') ||
+      document.querySelector('[data-nextjs-toast]') ||
+      document.querySelector('#__next-build-watcher') ||
+      document.body.innerHTML.includes('ChunkLoadError') ||
+      document.body.innerHTML.includes('SyntaxError') ||
+      document.body.innerHTML.includes('Module not found') ||
+      (document.body.style.backgroundColor === 'rgb(255, 85, 85)' || 
+       document.body.style.backgroundColor === 'red' ||
+       document.documentElement.style.backgroundColor === 'rgb(255, 85, 85)')) {
+    publish({
+      source: 'nextjs-build-error',
+      level: 'error',
+      message: 'Erro de BUILD detectado no NextJS',
+      args: ['Erro na compilação/build do projeto NextJS'],
+      type: 'nextjs-build-error',
+      errorSource: 'nextjs-build'
+    });
+    console.warn('[Lasy Bridge] NextJS build error detected');
   }
+
+  const nextData = window.__NEXT_DATA__;
+  if (nextData?.err) {
+    publish({
+      source: 'nextjs-existing',
+      level: 'error',
+      message: nextData.err.message,
+      stack: nextData.err.stack,
+      args: [nextData.err.message],
+      type: 'server-error',
+      errorSource: nextData.err.source || 'server'
+    });
+  }
+
+  if (typeof performance !== 'undefined') {
+    const faviconEntries = performance.getEntries().filter(entry => 
+      entry.name.includes('favicon') || 
+      entry.name.includes('ico') ||
+      (entry.duration === 0 && entry.name.includes('http'))
+    );
+
+    faviconEntries.forEach(entry => {
+      publish({
+        source: 'performance-existing',
+        level: entry.duration === 0 ? 'warn' : 'info',
+        message: `Resource issue: ${entry.name} (duration: ${entry.duration}ms)`,
+        args: [`Resource: ${entry.name}`],
+        type: 'network-performance',
+        url: entry.name,
+        duration: entry.duration
+      });
+    });
+  }
+
+  if (nextData?.props?.pageProps?.statusCode) {
+    const statusCode = nextData.props.pageProps.statusCode;
+    if (statusCode >= 400) {
+      publish({
+        source: 'page-existing',
+        level: statusCode >= 500 ? 'error' : 'warn',
+        message: `Page error: HTTP ${statusCode}`,
+        args: [`HTTP ${statusCode}`],
+        type: 'page-error',
+        statusCode: statusCode
+      });
+    }
+  }
+} catch {
+  // silent
+}__
 
   // 2. CHAIN com console.* existentes (aguardar hidratação)
   function setupConsoleInterception() {
