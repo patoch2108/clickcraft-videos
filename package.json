@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001 --turbopack",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,8 +12,8 @@
     "@fontsource/geist-mono": "^5.1.0",
     "@fontsource/geist-sans": "^5.1.0",
     "@fontsource/inter": "^5.2.0",
-    "@fontsource/open-sans": "^5.1.0",
     "@fontsource/roboto": "^5.1.0",
+    "@fontsource/open-sans": "^5.1.0",
     "@fontsource/source-code-pro": "^5.1.0",
     "@fontsource/fira-code": "^5.1.0",
     "@fontsource/jetbrains-mono": "^5.1.0",
