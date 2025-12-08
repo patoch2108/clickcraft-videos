@@ -49,10 +49,18 @@ export function UrlInput() {
   };
 
   const detectPlatform = (url: string): 'youtube' | 'tiktok' | 'instagram' | 'other' => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-    if (url.includes('tiktok.com')) return 'tiktok';
-    if (url.includes('instagram.com')) return 'instagram';
-    return 'other';
+    try {
+      const hostname = new URL(url).hostname.toLowerCase();
+      const youtubeHosts = ['youtube.com', 'www.youtube.com', 'youtu.be'];
+      const tiktokHosts = ['tiktok.com', 'www.tiktok.com'];
+      const instagramHosts = ['instagram.com', 'www.instagram.com'];
+      if (youtubeHosts.includes(hostname)) return 'youtube';
+      if (tiktokHosts.includes(hostname)) return 'tiktok';
+      if (instagramHosts.includes(hostname)) return 'instagram';
+      return 'other';
+    } catch {
+      return 'other';
+    }
   };
 
   return (
