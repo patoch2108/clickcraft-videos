@@ -49,9 +49,25 @@ export function UrlInput() {
   };
 
   const detectPlatform = (url: string): 'youtube' | 'tiktok' | 'instagram' | 'other' => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-    if (url.includes('tiktok.com')) return 'tiktok';
-    if (url.includes('instagram.com')) return 'instagram';
+    try {
+      const parsed = new URL(url.trim());
+      // List of allowed hosts per platform
+      const youtubeHosts = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be'];
+      const tiktokHosts = ['tiktok.com', 'www.tiktok.com', 'vm.tiktok.com'];
+      const instagramHosts = ['instagram.com', 'www.instagram.com'];
+      // Only match if the hostname is an exact match or a subdomain of these
+      const isAllowedHost = (hostname: string, allowed: string[]) =>
+        allowed.some(h =>
+          hostname === h || hostname.endsWith('.' + h)
+        );
+      const hostname = parsed.hostname.toLowerCase();
+      if (isAllowedHost(hostname, youtubeHosts)) return 'youtube';
+      if (isAllowedHost(hostname, tiktokHosts)) return 'tiktok';
+      if (isAllowedHost(hostname, instagramHosts)) return 'instagram';
+    } catch (err) {
+      // If URL parsing fails, treat as 'other'
+      return 'other';
+    }
     return 'other';
   };
 
